@@ -8,9 +8,15 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'https://attendance-backend-production-ade0.up.railway.app',
         changeOrigin: true,
       },
     },
+  },
+  build: {
+    outDir: 'dist',
+  },
+  preview: {
+    port: 5173,
   },
 })
