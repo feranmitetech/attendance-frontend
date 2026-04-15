@@ -14,7 +14,6 @@ import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage } from './pages/Oth
 function TrialExpired() {
   const { logout } = useAuthStore()
   const navigate = useNavigate()
-
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
@@ -25,7 +24,7 @@ function TrialExpired() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Your free trial has ended</h1>
         <p className="text-gray-500 mb-6 leading-relaxed">
-          Your 14-day free trial has expired. Contact us to continue using AttendEase and keep your school's data.
+          Your 14-day free trial has expired. Contact us to continue using AttendEase and keep your school data.
         </p>
         <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 text-left">
           <p className="text-sm font-semibold text-gray-700 mb-3">To continue, contact us:</p>
@@ -50,7 +49,6 @@ function TrialExpired() {
 function Protected({ children }) {
   const { token } = useAuthStore()
   const [expired, setExpired] = useState(false)
-
   useEffect(() => {
     if (!token) return
     api.get('/attendance/summary').catch(err => {
@@ -59,7 +57,6 @@ function Protected({ children }) {
       }
     })
   }, [token])
-
   if (!token) return <Navigate to="/login" replace />
   if (expired) return <TrialExpired />
   return children
