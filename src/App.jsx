@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
-import api from './lib/api'
-import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage } from './pages/OtherPages'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuthStore } from './store/auth.store'
+import api from './lib/api'
 import AppLayout from './components/layout/AppLayout'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -10,6 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import { StudentsPage, StudentFormPage } from './pages/StudentsPage'
 import CheckinPage from './pages/CheckinPage'
 import AttendancePage from './pages/AttendancePage'
+import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage } from './pages/OtherPages'
 
 function TrialExpired() {
   const { logout } = useAuthStore()
@@ -47,13 +47,6 @@ function TrialExpired() {
   )
 }
 
-// Redirects to /login if not authenticated
-function Protected({ children }) {
-  const { token } = useAuthStore()
-  return token ? children : <Navigate to="/login" replace />
-}
-
-// Redirects to /dashboard if already logged in
 function Protected({ children }) {
   const { token } = useAuthStore()
   const [expired, setExpired] = useState(false)
@@ -72,18 +65,18 @@ function Protected({ children }) {
   return children
 }
 
+function PublicOnly({ children }) {
+  const { token } = useAuthStore()
+  return token ? <Navigate to="/dashboard" replace /> : children
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
         <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
-
-        {/* Kiosk — full screen, no sidebar */}
         <Route path="/checkin" element={<Protected><CheckinPage /></Protected>} />
-
-        {/* Protected routes with sidebar layout */}
         <Route path="/" element={<Protected><AppLayout /></Protected>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
@@ -96,8 +89,6 @@ export default function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="sms-logs" element={<SmsLogsPage />} />
         </Route>
-
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
