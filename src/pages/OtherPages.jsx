@@ -451,3 +451,113 @@ export function TeachersPage() {
     </div>
   )
 }
+
+  export function SettingsPage() {
+  const [settings, setSettings] = useState(null)
+  const [form, setForm] = useState({ termii_api_key: '', termii_sender_id: '', name: '', contact_email: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    api.get('/settings').then(r => {
+      setSettings(r.data)
+      setForm({
+        termii_api_key: r.data.termii_api_key || '',
+        termii_sender_id: r.data.termii_sender_id || '',
+        name: r.data.name || '',
+        contact_email: r.data.contact_email || '',
+      })
+    }).finally(() => setLoading(false))
+  }, [])
+
+  async function handleSave(e) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await api.patch('/settings', form)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to save settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const trialDaysLeft = settings?.trial_ends_at
+    ? Math.max(0, Math.ceil((new Date(settings.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)))
+    : 0
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-xl font-semibold text-gray-900 mb-6">School settings</h1>
+
+      {/* Trial status */}
+      <div className={`rounded-xl p-4 mb-6 ${trialDaysLeft > 3 ? 'bg-blue-50' : 'bg-amber-50'}`}>
+        <p className={`text-sm font-semibold ${trialDaysLeft > 3 ? 'text-blue-700' : 'text-amber-700'}`}>
+          {settings?.status === 'active' ? 'Subscription active' : `Free trial — ${trialDaysLeft} days remaining`}
+        </p>
+        <p className={`text-xs mt-0.5 ${trialDaysLeft > 3 ? 'text-blue-500' : 'text-amber-500'}`}>
+          {settings?.status === 'active'
+            ? 'Your subscription is active'
+            : trialDaysLeft > 0
+              ? `Trial expires on ${new Date(settings?.trial_ends_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}`
+              : 'Your trial has expired — contact us to continue'}
+        </p>
+      </div>
+
+      {loading ? <div className="flex justify-center py-10"><Spinner size="lg" /></div> : (
+        <form onSubmit={handleSave} className="space-y-5">
+
+          {/* School info */}
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">School information</h2>
+            <div className="space-y-3">
+              <Input label="School name" value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Input label="Contact email" type="email" value={form.contact_email}
+                onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))} />
+            </div>
+          </Card>
+
+          {/* SMS settings */}
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold text-gray-700 mb-1">SMS configuration</h2>
+            <p className="text-xs text-gray-400 mb-4">
+              Create a free account at <a href="https://termii.com" target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">termii.com</a> to get your API key and sender ID. SMS costs are billed directly by Termii to your account.
+            </p>
+            <div className="space-y-3">
+              <Input
+                label="Termii API key"
+                placeholder="Your Termii API key"
+                value={form.termii_api_key}
+                onChange={e => setForm(f => ({ ...f, termii_api_key: e.target.value }))}
+                type="password"
+              />
+              <Input
+                label="Sender ID"
+                placeholder="e.g. SchoolAlert or your school name"
+                value={form.termii_sender_id}
+                onChange={e => setForm(f => ({ ...f, termii_sender_id: e.target.value }))}
+              />
+              <p className="text-xs text-gray-400">
+                The sender ID must be approved by Termii before SMS can be sent. It appears as the sender name on parent phones.
+              </p>
+            </div>
+          </Card>
+
+          {saved && (
+            <div className="bg-green-50 border border-green-200 text-green-700 text-sm px-4 py-3 rounded-lg">
+              Settings saved successfully
+            </div>
+          )}
+
+          <Button type="submit" loading={saving} className="w-full" size="lg">
+            Save settings
+          </Button>
+        </form>
+      )}
+    </div>
+  )
+}
