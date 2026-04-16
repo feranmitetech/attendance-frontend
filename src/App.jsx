@@ -9,7 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import { StudentsPage, StudentFormPage } from './pages/StudentsPage'
 import CheckinPage from './pages/CheckinPage'
 import AttendancePage from './pages/AttendancePage'
-import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage } from './pages/OtherPages'
+import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage, SettingsPage } from './pages/OtherPages'
 
 function TrialExpired() {
   const { logout } = useAuthStore()
@@ -85,6 +85,7 @@ export default function App() {
           <Route path="teachers" element={<TeachersPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="sms-logs" element={<SmsLogsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
