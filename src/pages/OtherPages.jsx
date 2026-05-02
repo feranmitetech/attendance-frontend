@@ -340,7 +340,12 @@ export function TeachersPage() {
       setShowForm(false)
       await load()
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create user')
+  const errData = err.response?.data
+  if (errData?.error === 'staff_limit_reached') {
+    setError(`You have reached your plan limit of ${errData.limit} staff accounts. Please upgrade your plan to add more.`)
+  } else {
+    setError(errData?.error || 'Failed to create user')
+  }
     } finally {
       setSaving(false)
     }
