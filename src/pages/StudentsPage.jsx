@@ -171,8 +171,13 @@ export function StudentFormPage() {
         setQrData(data)
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong')
-    } finally {
+  const errData = err.response?.data
+  if (errData?.error === 'student_limit_reached') {
+    setError(`You have reached your plan limit of ${errData.limit} students. Please upgrade your plan to enroll more students.`)
+  } else {
+    setError(errData?.error || 'Something went wrong')
+  }
+} finally {
       setLoading(false)
     }
   }
