@@ -9,6 +9,8 @@ import DashboardPage from './pages/DashboardPage'
 import { StudentsPage, StudentFormPage } from './pages/StudentsPage'
 import CheckinPage from './pages/CheckinPage'
 import AttendancePage from './pages/AttendancePage'
+import BillingPage from './pages/BillingPage'
+import BillingSuccessPage from './pages/BillingSuccessPage'
 import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage, SettingsPage } from './pages/OtherPages'
 
 function TrialExpired() {
@@ -86,8 +88,10 @@ export default function App() {
           <Route path="reports" element={<ReportsPage />} />
           <Route path="sms-logs" element={<SmsLogsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="billing" element={<BillingPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/billing/success" element={<BillingSuccessPage />} />
       </Routes>
     </BrowserRouter>
   )
