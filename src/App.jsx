@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './store/auth.store'
 import api from './lib/api'
 import AppLayout from './components/layout/AppLayout'
@@ -16,6 +16,7 @@ import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage, SettingsPage } fro
 function TrialExpired() {
   const { logout } = useAuthStore()
   const navigate = useNavigate()
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center">
@@ -26,17 +27,14 @@ function TrialExpired() {
         </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Your free trial has ended</h1>
         <p className="text-gray-500 mb-6 leading-relaxed">
-          Your 14-day free trial has expired. Contact us to continue using AttendEase and keep your school data.
+          Your 14-day free trial has expired. Subscribe to a plan to continue using AttendEase and keep your school data.
         </p>
-        <div className="bg-white border border-gray-200 rounded-xl p-5 mb-6 text-left">
-          <p className="text-sm font-semibold text-gray-700 mb-3">To continue, contact us:</p>
-          <a href="mailto:hello@attendease.ng" className="flex items-center gap-2 text-blue-600 text-sm mb-2 hover:underline">
-            hello@attendease.ng
-          </a>
-          <a href="https://wa.me/2348140328268" className="flex items-center gap-2 text-green-600 text-sm hover:underline">
-            WhatsApp us
-          </a>
-        </div>
+        <button
+          onClick={() => navigate('/billing')}
+          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors mb-3"
+        >
+          View plans & subscribe
+        </button>
         <button
           onClick={() => { logout(); navigate('/login') }}
           className="text-sm text-gray-400 hover:text-gray-600"
@@ -51,6 +49,8 @@ function TrialExpired() {
 function Protected({ children }) {
   const { token } = useAuthStore()
   const [expired, setExpired] = useState(false)
+  const location = useLocation()
+
   useEffect(() => {
     if (!token) return
     api.get('/attendance/summary').catch(err => {
@@ -59,8 +59,9 @@ function Protected({ children }) {
       }
     })
   }, [token])
+
   if (!token) return <Navigate to="/login" replace />
-  if (expired) return <TrialExpired />
+  if (expired && location.pathname !== '/billing') return <TrialExpired />
   return children
 }
 
