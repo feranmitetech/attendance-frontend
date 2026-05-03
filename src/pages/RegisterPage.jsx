@@ -64,7 +64,7 @@ export default function RegisterPage() {
                   onChange={set('subdomain')}
                   required
                 />
-                <span className="px-3 py-2.5 text-sm text-gray-400 bg-gray-50 border-l border-gray-200">.attendease.com</span>
+                <span className="px-3 py-2.5 text-sm text-gray-400 bg-gray-50 border-l border-gray-200">.attendease.com.ng</span>
               </div>
             </div>
 
