@@ -23,7 +23,6 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    target: ['es2015', 'ios13'],
   },
   preview: {
     port: 5173,
