@@ -121,14 +121,17 @@ export default function BillingPage() {
       )}
 
       {/* Trial banner */}
-      {status?.status !== 'active' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-          <p className="text-sm font-semibold text-amber-800">
-            {status?.trial_days_left > 0
-              ? `Free trial — ${status.trial_days_left} days remaining`
-              : 'Your free trial has expired'}
-          </p>
-          <p className="text-xs text-amber-600 mt-0.5">Subscribe to continue using AttendEase</p>
+      {status?.status === 'active' && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-green-800">
+              Active subscription — {status.plan} plan
+            </p>
+            <p className="text-xs text-green-600 mt-0.5">
+              {status.subscription_days_left} days remaining · Expires {new Date(status.subscription_end_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <Badge variant="green">Active</Badge>
         </div>
       )}
 
