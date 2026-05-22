@@ -26,4 +26,15 @@ api.interceptors.response.use(
   }
 )
 
+export function getSchoolPlan() {
+  const token = localStorage.getItem('token')
+  if (!token) return 'trial'
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.plan || 'trial'
+  } catch {
+    return 'trial'
+  }
+}
+
 export default api

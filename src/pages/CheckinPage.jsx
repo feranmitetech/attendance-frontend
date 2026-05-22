@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Webcam from 'react-webcam'
 import api from '../lib/api'
+import { getSchoolPlan } from '../lib/api'
 import { Button } from '../components/ui'
 
 const MODES = { idle: 'idle', scanning: 'scanning', success: 'success', error: 'error' }
@@ -15,6 +16,14 @@ export default function CheckinPage() {
   const webcamRef = useRef(null)
   const scanIntervalRef = useRef(null)
   const resetTimerRef = useRef(null)
+  const schoolPlan = getSchoolPlan()
+  const hasFaceRecognition = ['growth', 'enterprise'].includes(schoolPlan)
+
+  useEffect(() => {
+    if (!hasFaceRecognition && method === 'face') {
+      setMethod('qr')
+    }
+  }, [hasFaceRecognition])
 
   useEffect(() => {
     api.get('/students').then(r => setAllStudents(r.data)).catch(() => {})
@@ -262,7 +271,10 @@ export default function CheckinPage() {
 
       {/* QR / Face method switcher */}
       <div className="flex bg-gray-800 rounded-xl p-1 gap-1">
-        {[{ key: 'qr', label: 'QR card' }, { key: 'face', label: 'Face scan' }].map(({ key, label }) => (
+        {[
+          { key: 'qr', label: 'QR card' },
+          ...(hasFaceRecognition ? [{ key: 'face', label: 'Face scan' }] : [])
+        ].map(({ key, label }) => (
           <button
             key={key}
             onClick={() => {
