@@ -17,7 +17,7 @@ export default function CheckinPage() {
   const scanIntervalRef = useRef(null)
   const resetTimerRef = useRef(null)
   const schoolPlan = getSchoolPlan()
-  const hasFaceRecognition = ['growth', 'enterprise', 'trial'].includes(schoolPlan)
+  const hasFaceRecognition = ['growth', 'enterprise', 'trial', 'free'].includes(schoolPlan)
 
   useEffect(() => {
     if (!hasFaceRecognition && method === 'face') {
