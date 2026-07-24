@@ -13,6 +13,7 @@ import CheckinPage from './pages/CheckinPage'
 import AttendancePage from './pages/AttendancePage'
 import BillingPage from './pages/BillingPage'
 import BillingSuccessPage from './pages/BillingSuccessPage'
+import LandingPage from './pages/LandingPage'
 import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage, SettingsPage } from './pages/OtherPages'
 
 
@@ -77,13 +78,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
         <Route path="/forgot-password" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/checkin" element={<Protected><CheckinPage /></Protected>} />
-        <Route path="/" element={<Protected><AppLayout /></Protected>}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route element={<Protected><AppLayout /></Protected>}>
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="students" element={<StudentsPage />} />
           <Route path="students/new" element={<StudentFormPage />} />
