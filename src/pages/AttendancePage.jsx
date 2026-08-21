@@ -152,6 +152,7 @@ export default function AttendancePage() {
                       ? <p className="text-xs text-purple-500">Out: {r.check_out_time?.slice(0, 5)}</p>
                       : <p className="text-xs text-gray-300">Out: —</p>}
                   </div>
+                  {r.status === 'late' && <Badge variant="green">present</Badge>}
                   <Badge variant={r.status === 'present' ? 'green' : r.status === 'late' ? 'amber' : 'red'}>
                     {r.status}
                   </Badge>

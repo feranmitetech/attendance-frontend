@@ -77,6 +77,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-gray-400">{r.students?.classes?.name} · {r.method}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {r.status === 'late' && <Badge variant="green">present</Badge>}
                       <Badge variant={r.status === 'present' ? 'green' : r.status === 'late' ? 'amber' : 'red'}>
                         {r.status}
                       </Badge>
