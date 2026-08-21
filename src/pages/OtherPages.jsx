@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import api from '../lib/api'
 import { Button, Card, Badge, Input, Select, Spinner, Empty } from '../components/ui'
+import { useAuthStore } from '../store/auth.store'
 
 // ── Classes ───────────────────────────────────────────
 export function ClassesPage() {
@@ -468,6 +469,7 @@ function ChangePassword() {
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState(null)
   const [error, setError] = useState('')
+  const logout = useAuthStore(state => state.logout)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -485,6 +487,9 @@ function ChangePassword() {
       })
       setMsg('Password changed successfully')
       setForm({ current: '', newPass: '', confirm: '' })
+      window.alert('Password changed successfully. Sign in again with your new password.')
+      logout()
+      window.location.assign('/login')
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to change password')
     } finally {
@@ -493,17 +498,20 @@ function ChangePassword() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <div className="space-y-3">
       <Input label="Current password" type="password" placeholder="••••••••"
-        value={form.current} onChange={e => setForm(f => ({ ...f, current: e.target.value }))} required />
+        autoComplete="current-password" value={form.current}
+        onChange={e => setForm(f => ({ ...f, current: e.target.value }))} required />
       <Input label="New password" type="password" placeholder="Min. 8 characters"
-        value={form.newPass} onChange={e => setForm(f => ({ ...f, newPass: e.target.value }))} required />
+        autoComplete="new-password" value={form.newPass}
+        onChange={e => setForm(f => ({ ...f, newPass: e.target.value }))} required />
       <Input label="Confirm new password" type="password" placeholder="Repeat new password"
-        value={form.confirm} onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))} required />
+        autoComplete="new-password" value={form.confirm}
+        onChange={e => setForm(f => ({ ...f, confirm: e.target.value }))} required />
       {error && <p className="text-sm text-red-500">{error}</p>}
       {msg && <p className="text-sm text-green-600">{msg}</p>}
-      <Button type="submit" loading={saving} variant="secondary">Update password</Button>
-    </form>
+      <Button type="button" onClick={handleSubmit} loading={saving} variant="secondary">Update password</Button>
+    </div>
   )
 }
 
