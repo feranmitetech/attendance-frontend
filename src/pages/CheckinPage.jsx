@@ -1,10 +1,51 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Webcam from 'react-webcam'
 import api from '../lib/api'
 import { getSchoolPlan } from '../lib/api'
 import { Button } from '../components/ui'
 
 const MODES = { idle: 'idle', scanning: 'scanning', success: 'success', error: 'error' }
+const FACE_MODEL_URL = '/models'
+const FACE_DETECTOR_OPTIONS = { inputSize: 224, scoreThreshold: 0.35 }
+
+let faceApiPromise
+let faceModelsPromise
+
+function loadFaceApi() {
+  if (!faceApiPromise) {
+    faceApiPromise = import('@vladmandic/face-api').catch(error => {
+      faceApiPromise = null
+      throw error
+    })
+  }
+  return faceApiPromise
+}
+
+function loadFaceModels() {
+  if (!faceModelsPromise) {
+    faceModelsPromise = loadFaceApi()
+      .then(async faceapi => {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.isLoaded
+            ? Promise.resolve()
+            : faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+          faceapi.nets.faceRecognitionNet.isLoaded
+            ? Promise.resolve()
+            : faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL),
+          faceapi.nets.faceLandmark68TinyNet.isLoaded
+            ? Promise.resolve()
+            : faceapi.nets.faceLandmark68TinyNet.loadFromUri(FACE_MODEL_URL),
+        ])
+        return faceapi
+      })
+      .catch(error => {
+        faceModelsPromise = null
+        throw error
+      })
+  }
+
+  return faceModelsPromise
+}
 
 export default function CheckinPage() {
   const [action, setAction] = useState('checkin')   // 'checkin' | 'checkout'
@@ -13,11 +54,18 @@ export default function CheckinPage() {
   const [result, setResult] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
   const [allStudents, setAllStudents] = useState([])
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState('')
   const webcamRef = useRef(null)
   const scanIntervalRef = useRef(null)
   const resetTimerRef = useRef(null)
   const schoolPlan = getSchoolPlan()
   const hasFaceRecognition = ['growth', 'enterprise', 'trial', 'free'].includes(schoolPlan)
+  const studentDescriptors = useMemo(() => allStudents.flatMap(student => {
+    if (!student.face_descriptor) return []
+    const descriptor = new Float32Array(Object.values(student.face_descriptor))
+    return descriptor.length === 128 ? [{ student, descriptor }] : []
+  }), [allStudents])
 
   useEffect(() => {
     if (!hasFaceRecognition && method === 'face') {
@@ -28,6 +76,26 @@ export default function CheckinPage() {
   useEffect(() => {
     api.get('/students').then(r => setAllStudents(r.data)).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!hasFaceRecognition) return undefined
+
+    const preload = () => loadFaceModels().catch(error => {
+      console.error('Face model preload failed:', error)
+    })
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(preload, { timeout: 1000 })
+      return () => window.cancelIdleCallback(idleId)
+    }
+
+    const timerId = window.setTimeout(preload, 0)
+    return () => window.clearTimeout(timerId)
+  }, [hasFaceRecognition])
+
+  useEffect(() => {
+    setCameraReady(false)
+    setCameraError('')
+  }, [method])
 
   function scheduleReset() {
     clearTimeout(resetTimerRef.current)
@@ -84,22 +152,25 @@ export default function CheckinPage() {
 
   async function captureFace() {
     if (mode !== MODES.idle || !webcamRef.current) return
+
+    if (!cameraReady) {
+      setErrorMsg(cameraError || 'Camera is still preparing. Please wait a moment and try again.')
+      setMode(MODES.error)
+      scheduleReset()
+      return
+    }
+
     setMode(MODES.scanning)
     try {
-      const faceapi = await import('@vladmandic/face-api')
-      const MODEL_URL = '/models'
-      if (!faceapi.nets.tinyFaceDetector.isLoaded) {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-        ])
+      const video = webcamRef.current.video
+      if (!video || video.readyState < 3 || !video.videoWidth || !video.videoHeight) {
+        throw new Error('Camera is not ready yet')
       }
 
-      const video = webcamRef.current.video
+      const faceapi = await loadFaceModels()
       const detection = await faceapi
-        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-        .withFaceLandmarks()
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions(FACE_DETECTOR_OPTIONS))
+        .withFaceLandmarks(true)
         .withFaceDescriptor()
 
       if (!detection) {
@@ -113,10 +184,8 @@ export default function CheckinPage() {
       let bestMatch = null
       let bestDistance = Infinity
 
-      for (const student of allStudents) {
-        if (!student.face_descriptor) continue
-        const stored = new Float32Array(Object.values(student.face_descriptor))
-        const distance = faceapi.euclideanDistance(queryDescriptor, stored)
+      for (const { student, descriptor } of studentDescriptors) {
+        const distance = faceapi.euclideanDistance(queryDescriptor, descriptor)
         if (distance < bestDistance) {
           bestDistance = distance
           bestMatch = student
@@ -136,7 +205,13 @@ export default function CheckinPage() {
       setMode(MODES.success)
       scheduleReset()
     } catch (err) {
-      setErrorMsg(err.response?.data?.error || 'Face scan failed')
+      console.error('Face scan failed:', err)
+      const message = err.response?.data?.error
+        || (err.name === 'NotAllowedError' ? 'Camera access was denied. Please allow camera access and try again.' : '')
+        || (err.name === 'NotFoundError' ? 'No camera was found on this device.' : '')
+        || err.message
+        || 'Face scan failed'
+      setErrorMsg(typeof message === 'string' ? message : 'Face scan failed')
       setMode(MODES.error)
       scheduleReset()
     }
@@ -206,6 +281,15 @@ export default function CheckinPage() {
           screenshotFormat="image/jpeg"
           className="w-full h-full object-cover"
           videoConstraints={{ width: 320, height: 320, facingMode: method === 'qr' ? 'environment' : 'user' }}
+          onUserMedia={() => {
+            setCameraReady(true)
+            setCameraError('')
+          }}
+          onUserMediaError={(error) => {
+            console.error('Camera access failed:', error)
+            setCameraReady(false)
+            setCameraError('Unable to access the camera. Check the browser camera permission and try again.')
+          }}
         />
 
         {mode === MODES.scanning && (
@@ -263,9 +347,10 @@ export default function CheckinPage() {
         <Button
           onClick={captureFace}
           size="lg"
+          disabled={!cameraReady}
           className={`mb-4 text-white border-none ${isCheckout ? 'bg-purple-500 hover:bg-purple-400' : 'bg-blue-500 hover:bg-blue-400'}`}
         >
-          {isCheckout ? 'Check me out' : 'Identify me'}
+          {!cameraReady ? 'Preparing camera…' : isCheckout ? 'Check me out' : 'Identify me'}
         </Button>
       )}
 
