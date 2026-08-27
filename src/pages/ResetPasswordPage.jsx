@@ -5,9 +5,9 @@ import { Button, Input } from '../components/ui'
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
+  const email = searchParams.get('email')?.trim().toLowerCase()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ password: '', confirm: '' })
+  const [form, setForm] = useState({ code: '', password: '', confirm: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,7 +21,8 @@ export default function ResetPasswordPage() {
     setLoading(true)
     try {
       await api.post('/auth/reset-password', {
-        token,
+        email,
+        code: form.code,
         new_password: form.password,
       })
       alert('Password reset successfully. Please log in with your new password.')
@@ -33,12 +34,12 @@ export default function ResetPasswordPage() {
     }
   }
 
-  if (!token) {
+  if (!email) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-6 text-center max-w-sm w-full">
-          <p className="text-red-500 text-sm mb-4">Invalid reset link. Please request a new one.</p>
-          <Link to="/forgot-password" className="text-blue-600 hover:underline text-sm">Request new link</Link>
+          <p className="text-red-500 text-sm mb-4">Your email address is missing. Please request a new code.</p>
+          <Link to="/forgot-password" className="text-blue-600 hover:underline text-sm">Request new code</Link>
         </div>
       </div>
     )
@@ -54,10 +55,14 @@ export default function ResetPasswordPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Set new password</h1>
-          <p className="text-sm text-gray-500 mt-1">Enter your new password below</p>
+          <p className="text-sm text-gray-500 mt-1">Enter the code sent to {email}</p>
         </div>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <Input label="Verification code" type="text" placeholder="6-digit code"
+              inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.replace(/\D/g, '').slice(0, 6) }))}
+              pattern="[0-9]{6}" required />
             <Input label="New password" type="password" placeholder="Min. 8 characters"
               value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               minLength={8} required />
@@ -68,6 +73,9 @@ export default function ResetPasswordPage() {
             <Button type="submit" className="w-full" size="lg" loading={loading}>
               Reset password
             </Button>
+            <p className="text-center text-sm text-gray-500">
+              Code expired? <Link to="/forgot-password" className="text-blue-600 hover:underline">Request a new one</Link>
+            </p>
           </form>
         </div>
       </div>

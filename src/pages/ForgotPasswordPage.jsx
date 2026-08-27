@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { Button, Input } from '../components/ui'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -15,7 +15,7 @@ export default function ForgotPasswordPage() {
     setError('')
     try {
       await api.post('/auth/forgot-password', { email })
-      setSent(true)
+      navigate(`/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`)
     } catch (err) {
       setError(err.response?.data?.error || 'Something went wrong')
     } finally {
@@ -33,38 +33,21 @@ export default function ForgotPasswordPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Reset password</h1>
-          <p className="text-sm text-gray-500 mt-1">Enter your email to receive a reset link</p>
+          <p className="text-sm text-gray-500 mt-1">Enter your email to receive a verification code</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-          {sent ? (
-            <div className="text-center py-4">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="text-sm font-medium text-gray-800 mb-1">Check your email</p>
-              <p className="text-xs text-gray-500 mb-4">
-                If an account exists for {email}, you will receive a password reset link shortly.
-              </p>
-              <Link to="/login" className="text-blue-600 text-sm font-medium hover:underline">
-                Back to login
-              </Link>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input label="Email address" type="email" placeholder="admin@school.com"
-                value={email} onChange={e => setEmail(e.target.value)} required />
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" size="lg" loading={loading}>
-                Send reset link
-              </Button>
-              <p className="text-center text-sm text-gray-500">
-                <Link to="/login" className="text-blue-600 hover:underline">Back to login</Link>
-              </p>
-            </form>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input label="Email address" type="email" placeholder="admin@school.com"
+              value={email} onChange={e => setEmail(e.target.value)} required />
+            {error && <p className="text-sm text-red-500">{error}</p>}
+            <Button type="submit" className="w-full" size="lg" loading={loading}>
+              Send verification code
+            </Button>
+            <p className="text-center text-sm text-gray-500">
+              <Link to="/login" className="text-blue-600 hover:underline">Back to login</Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>
