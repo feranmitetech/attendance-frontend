@@ -59,7 +59,7 @@ export default function CheckinPage() {
   const webcamRef = useRef(null)
   const scanIntervalRef = useRef(null)
   const resetTimerRef = useRef(null)
-  const schoolPlan = getSchoolPlan()
+  const [schoolPlan, setSchoolPlan] = useState(getSchoolPlan())
   const hasFaceRecognition = ['growth', 'enterprise', 'trial', 'free'].includes(schoolPlan)
   const studentDescriptors = useMemo(() => allStudents.flatMap(student => {
     if (!student.face_descriptor) return []
@@ -74,7 +74,8 @@ export default function CheckinPage() {
   }, [hasFaceRecognition])
 
   useEffect(() => {
-    api.get('/students').then(r => setAllStudents(r.data)).catch(() => {})
+    api.get('/students').then(response => setAllStudents(response.data)).catch(() => {})
+    api.get('/payments/status').then(response => setSchoolPlan(response.data.plan || 'trial')).catch(() => {})
   }, [])
 
   useEffect(() => {

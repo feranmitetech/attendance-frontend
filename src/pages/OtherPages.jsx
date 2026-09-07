@@ -551,19 +551,20 @@ function ChangePassword() {
   const trialDaysLeft = settings?.trial_ends_at
     ? Math.max(0, Math.ceil((new Date(settings.trial_ends_at) - new Date()) / (1000 * 60 * 60 * 24)))
     : 0
+  const subscriptionActive = settings?.status === 'active'
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-xl font-semibold text-gray-900 mb-6">School settings</h1>
 
       {/* Trial status */}
-      <div className={`rounded-xl p-4 mb-6 ${trialDaysLeft > 3 ? 'bg-blue-50' : 'bg-amber-50'}`}>
-        <p className={`text-sm font-semibold ${trialDaysLeft > 3 ? 'text-blue-700' : 'text-amber-700'}`}>
-          {settings?.status === 'active' ? 'Subscription active' : `Free trial — ${trialDaysLeft} days remaining`}
+      <div className={`rounded-xl p-4 mb-6 ${subscriptionActive ? 'bg-green-50' : trialDaysLeft > 3 ? 'bg-blue-50' : 'bg-amber-50'}`}>
+        <p className={`text-sm font-semibold ${subscriptionActive ? 'text-green-700' : trialDaysLeft > 3 ? 'text-blue-700' : 'text-amber-700'}`}>
+          {subscriptionActive ? 'Subscription active' : `Free trial — ${trialDaysLeft} days remaining`}
         </p>
-        <p className={`text-xs mt-0.5 ${trialDaysLeft > 3 ? 'text-blue-500' : 'text-amber-500'}`}>
-          {settings?.status === 'active'
-            ? 'Your subscription is active'
+        <p className={`text-xs mt-0.5 ${subscriptionActive ? 'text-green-600' : trialDaysLeft > 3 ? 'text-blue-500' : 'text-amber-500'}`}>
+          {subscriptionActive
+            ? `Your subscription expires on ${new Date(settings.subscription_end_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}`
             : trialDaysLeft > 0
               ? `Trial expires on ${new Date(settings?.trial_ends_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}`
               : 'Your trial has expired — contact us to continue'}

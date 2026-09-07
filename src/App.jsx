@@ -17,9 +17,11 @@ import LandingPage from './pages/LandingPage'
 import { ClassesPage, ReportsPage, SmsLogsPage, TeachersPage, SettingsPage } from './pages/OtherPages'
 
 
-function TrialExpired() {
-  const { logout } = useAuthStore()
+function SubscriptionExpired({ reason }) {
+  const { logout, user } = useAuthStore()
   const navigate = useNavigate()
+  const trialExpired = reason === 'trial_expired'
+  const canManageBilling = user?.role === 'admin'
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -29,16 +31,23 @@ function TrialExpired() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Your free trial has ended</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          {trialExpired ? 'Your free trial has ended' : 'Your subscription has expired'}
+        </h1>
         <p className="text-gray-500 mb-6 leading-relaxed">
-          Your 14-day free trial has expired. Subscribe to a plan to continue using AttendEase and keep your school data.
+          {trialExpired
+            ? 'Your 14-day free trial has expired. Subscribe to a plan to continue using AttendEase and keep your school data.'
+            : 'Renew your plan to continue using AttendEase. Your school data remains safely stored.'}
+          {!canManageBilling && ' Please ask your school administrator to renew the account.'}
         </p>
-        <button
-          onClick={() => navigate('/billing')}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors mb-3"
-        >
-          View plans & subscribe
-        </button>
+        {canManageBilling && (
+          <button
+            onClick={() => navigate('/billing')}
+            className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors mb-3"
+          >
+            {trialExpired ? 'View plans & subscribe' : 'Renew subscription'}
+          </button>
+        )}
         <button
           onClick={() => { logout(); navigate('/login') }}
           className="text-sm text-gray-400 hover:text-gray-600"
@@ -52,20 +61,32 @@ function TrialExpired() {
 
 function Protected({ children }) {
   const { token } = useAuthStore()
-  const [expired, setExpired] = useState(false)
+  const [expiryReason, setExpiryReason] = useState(null)
   const location = useLocation()
 
   useEffect(() => {
     if (!token) return
-    api.get('/attendance/summary').catch(err => {
-      if (err.response?.data?.error === 'trial_expired') {
-        setExpired(true)
-      }
-    })
-  }, [token])
+    let active = true
+    api.get('/payments/status')
+      .then(({ data }) => {
+        if (!active) return
+        setExpiryReason(data.status === 'expired' ? (data.expiry_reason || 'subscription_expired') : null)
+      })
+      .catch(err => {
+        if (!active) return
+        const reason = err.response?.data?.error
+        if (['trial_expired', 'subscription_expired', 'subscription_required'].includes(reason)) {
+          setExpiryReason(reason === 'trial_expired' ? reason : 'subscription_expired')
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [token, location.pathname])
 
   if (!token) return <Navigate to="/login" replace />
-  if (expired && location.pathname !== '/billing') return <TrialExpired />
+  if (expiryReason && location.pathname !== '/billing') return <SubscriptionExpired reason={expiryReason} />
   return children
 }
 

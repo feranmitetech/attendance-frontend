@@ -45,12 +45,14 @@ const PLANS = [
 export default function BillingPage() {
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [subscribing, setSubscribing] = useState(null)
   const [billingCycle, setBillingCycle] = useState('monthly')
 
   useEffect(() => {
     api.get('/payments/status')
       .then(r => setStatus(r.data))
+      .catch(err => setLoadError(err.response?.data?.error || 'Unable to load subscription status'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -68,6 +70,9 @@ export default function BillingPage() {
   }
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+  if (loadError) {
+    return <div className="p-6 max-w-xl mx-auto text-center text-red-600">{loadError}. Please refresh and try again.</div>
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -76,6 +81,8 @@ export default function BillingPage() {
         <p className="text-gray-500">
           {status?.status === 'active'
             ? `You are on the ${status.plan} plan`
+            : status?.status === 'expired'
+              ? 'Your previous plan has expired. Choose a plan to restore access.'
             : `Your free trial has ${status?.trial_days_left || 0} days remaining`}
         </p>
       </div>
@@ -113,25 +120,25 @@ export default function BillingPage() {
           <div>
             <p className="text-sm font-semibold text-green-800">Active subscription — {status.plan} plan</p>
             <p className="text-xs text-green-600 mt-0.5">
-              Renews on {new Date(status.subscription_end_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {status.subscription_days_left} days remaining · Expires {new Date(status.subscription_end_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
           <Badge variant="green">Active</Badge>
         </div>
       )}
 
-      {/* Trial banner */}
-      {status?.status === 'active' && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+      {/* Expired subscription banner */}
+      {status?.status === 'expired' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold text-green-800">
-              Active subscription — {status.plan} plan
+            <p className="text-sm font-semibold text-amber-800">
+              {status.expiry_reason === 'trial_expired' ? 'Free trial expired' : `${status.plan} subscription expired`}
             </p>
-            <p className="text-xs text-green-600 mt-0.5">
-              {status.subscription_days_left} days remaining · Expires {new Date(status.subscription_end_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}
+            <p className="text-xs text-amber-700 mt-0.5">
+              Select a plan below to restore access to your school account.
             </p>
           </div>
-          <Badge variant="green">Active</Badge>
+          <Badge variant="amber">Expired</Badge>
         </div>
       )}
 
